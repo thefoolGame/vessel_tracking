@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Vessel Tracking Database",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "vessel_tracking",
+      "Username": "postgres",
+      "SSLMode": "prefer",
+      "Comment": "Główna baza danych systemu monitoringu floty łodzi"
+    }
+  }
+}
