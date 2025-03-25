@@ -41,8 +41,7 @@ class Manufacturer(Base):
     )
 
     vessel_types = relationship("VesselType", back_populates="manufacturer")
-    # sensors = relationship("Sensor", back_populates="manufacturer")
-    # sensor_types = relationship("SensorType", back_populates="manufacturer")
+    sensor_types = relationship("SensorType", back_populates="manufacturer")
 
 
 class Operator(Base):
@@ -143,6 +142,7 @@ class Vessel(Base):
     vessel_type = relationship("VesselType", back_populates="vessels")
     fleet = relationship("Fleet", back_populates="vessels")
     operator = relationship("Operator", back_populates="vessels")
+    sensors = relationship("Sensor", back_populates="vessel")
 
     @property
     def manufacturer(self):
@@ -177,6 +177,51 @@ class Vessel(Base):
                         "Operator must match the fleet's operator when vessel is assigned to a fleet"
                     )
         return operator_id
+
+
+class SensorType(Base):
+    __tablename__ = "sensor_types"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    manufacturer_id = Column(
+        Integer, ForeignKey("manufacturers.id", ondelete="RESTRICT")
+    )
+    measurement_unit = Column(String(50))
+    min_val = Column(Numeric)
+    max_val = Column(Numeric)
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
+
+    manufacturer = relationship("Manufacturer", back_populates="sensor_types")
+    sensors = relationship("Sensor", back_populates="sensor_type")
+
+
+class Sensor(Base):
+    __tablename__ = "sensors"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    sensor_type_id = Column(
+        Integer, ForeignKey("sensor_types.id", ondelete="RESTRICT"), nullable=False
+    )
+    vessel_id = Column(
+        Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
+    )
+    serial_number = Column(String(100))
+    installation_date = Column(Date)
+    callibration_date = Column(Date)
+    location_on_boat = Column(Text)
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
+
+    sensor_type = relationship("SensorType", back_populates="sensors")
+    vessel = relationship("Vessel", back_populates="sensors")
 
 
 @event.listens_for(Vessel, "before_insert")
