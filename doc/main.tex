@@ -1,0 +1,160 @@
+\documentclass[12pt,a4paper,polish]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{polski}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{longtable}
+
+\usepackage{hyperref}
+\usepackage{units}
+\usepackage{color}
+
+\begin{document}
+\pdfpageheight   297mm
+\pdfpagewidth    210mm
+
+\section{Wstęp}
+
+System umożliwia monitoring floty łodzi w czasie rzeczywistym, przechowując zarówno dane historyczne, jak i aktualne odczyty z czujników. Baza danych PostgreSQL obsługuje różne typy łodzi, śledząc ich stan techniczny, lokalizację oraz parametry ruchu. System implementuje planowanie tras poprzez definiowanie przyszłych punktów nawigacyjnych i wykorzystuje dane AIS do integracji ze standardami nawigacji morskiej.
+
+\subsection{Cel projektu}
+
+Celem projektu jest stworzenie systemu monitoringu floty łodzi oferującego szereg zaawansowanych funkcjonalności, które umożliwiają kompleksowe zarządzanie jednostkami pływającymi. System ma odpowiadać na potrzeby operatorów i zarządzających flotami w zakresie kontroli, planowania oraz analizy danych poprzez:
+
+\begin{itemize}
+	\item Monitorowanie pozycji łodzi w czasie rzeczywistym z wykorzystaniem danych AIS
+	\item Śledzenie parametrów technicznych wszystkich jednostek
+	\item Planowanie przyszłych tras łodzi z określeniem przewidywanych czasów przybycia (ETA)
+	\item Porównywanie rzeczywistej trasy z zaplanowaną
+	\item Zarządzanie flotami łodzi przypisanymi do operatorów
+	\item Identyfikację łodzi zgodną ze standardami morskimi (numery IMO, MMSI, sygnały wywoławcze)
+	\item Monitorowanie warunków pogodowych w rejonach przebywania jednostek
+	\item System alertów dla parametrów przekraczających bezpieczne zakresy
+	\item Zarządzanie serwisem i konserwacją jednostek
+	\item Konfigurowanie typów łodzi z przypisanymi wymaganiami sprzętowymi
+	\item Historyczną analizę danych dla optymalizacji tras i wydajności
+\end{itemize}
+
+\subsection{Zakres projektu}
+
+Zakres projektu obejmuje stworzenie kompleksowego systemu monitoringu floty łodzi, który będzie realizował wszystkie założone cele z uwzględnieniem odpowiednich aspektów jakościowych. System będzie wykorzystywał bazę danych PostgreSQL do przechowywania informacji o jednostkach, ich parametrach oraz danych operacyjnych.
+
+\paragraph{Funkcjonalność (Functionality):}
+\begin{itemize}
+	\item Must Have:
+	      \begin{itemize}
+		      \item Obsługa pełnego cyklu danych: od odczytu czujników po analizę historyczną
+		      \item Identyfikacja jednostek zgodna z normami morskimi (IMO, MMSI)
+	      \end{itemize}
+	\item Should Have:
+	      \begin{itemize}
+		      \item Możliwość zarządzania typami i konfiguracją łodzi
+		      \item Planowanie tras i zarządzanie ETA
+	      \end{itemize}
+	\item Could Have:
+	      \begin{itemize}
+		      \item Zaawansowane filtrowanie i agregacja danych historycznych
+	      \end{itemize}
+	\item Won't Have:
+	      \begin{itemize}
+		      \item Automatyczna optymalizacja tras
+	      \end{itemize}
+\end{itemize}
+
+\paragraph{Użyteczność (Usability):}
+\begin{itemize}
+	\item Must Have:
+	      \begin{itemize}
+		      \item Wyświetlanie alertów w ciągu maksymalnie 5 sekund od wykrycia anomalii
+		      \item Wyszukiwanie danych z minimum 3 kryteriami filtrowania (operator, flota, typ łodzi) z czasem odpowiedzi poniżej 5 sekund dla bazy zawierającej do 10 000 rekordów
+	      \end{itemize}
+	\item Should Have:
+	      \begin{itemize}
+		      \item Interfejs umożliwiający nawigację do dowolnego widoku w maksymalnie 3 kliknięciach
+		      \item Czas potrzebny na lokalizację konkretnej łodzi poniżej 10 sekund
+	      \end{itemize}
+	\item Could Have:
+	      \begin{itemize}
+		      \item Dokumentacja użytkownika dostępna online z minimum 10 przykładami typowych operacji
+		      \item Minimum 5 konfigurowalnych widoków i 3 opcje personalizacji dla każdego użytkownika
+	      \end{itemize}
+	\item Won't Have:
+	      \begin{itemize}
+		      \item Interfejs oparty o rzeczywistość rozszerzoną
+	      \end{itemize}
+\end{itemize}
+
+\paragraph{Niezawodność (Reliability):}
+\begin{itemize}
+	\item Must Have:
+	      \begin{itemize}
+		      \item Architektura umożliwiająca dostępność systemu na poziomie minimum 99,0\% w środowisku produkcyjnym
+		      \item Walidacja 100\% danych wejściowych z logowaniem i odrzuceniem nieprawidłowych formatów
+	      \end{itemize}
+	\item Should Have:
+	      \begin{itemize}
+		      \item Mechanizm regularnych backupów z konfiguracją przechowywania do 60 dni historii
+		      \item Projekt zakładający możliwość odtworzenia danych z maksymalną utratą 30 minut informacji (RPO)
+	      \end{itemize}
+	\item Could Have:
+	      \begin{itemize}
+		      \item Procedury automatycznego przywracania systemu po awarii w czasie poniżej 60 minut
+		      \item Mechanizmy zapewniające odtwarzanie stanu systemu z dokładnością do 98\% danych
+	      \end{itemize}
+	\item Won't Have:
+	      \begin{itemize}
+		      \item Druga, równoległa infrastruktura pracująca w trybie active-active
+	      \end{itemize}
+\end{itemize}
+
+\paragraph{Wydajność (Performance):}
+\begin{itemize}
+	\item Must Have:
+	      \begin{itemize}
+		      \item Obsługa minimum 150 jednostek jednocześnie bez degradacji wydajności
+		      \item Przetwarzanie minimum 25 odczytów na sekundę
+	      \end{itemize}
+	\item Should Have:
+	      \begin{itemize}
+		      \item Aktualizacja danych lokalizacyjnych co maksymalnie 30 sekund
+		      \item Czas odpowiedzi 90\% zapytań do bazy danych poniżej 2 sekund
+	      \end{itemize}
+	\item Could Have:
+	      \begin{itemize}
+		      \item Buforowanie najczęściej używanych danych z redukcją czasu odpowiedzi o minimum 40\%
+		      \item Obsługa do 200 zapytań na minutę w momentach szczytowego obciążenia
+	      \end{itemize}
+	\item Won't Have:
+	      \begin{itemize}
+		      \item Przetwarzanie strumieni danych w czasie rzeczywistym dla wszystkich parametrów (powyżej 100 parametrów/s)
+	      \end{itemize}
+\end{itemize}
+
+\paragraph{Możliwość wsparcia i rozwoju (Supportability):}
+\begin{itemize}
+	\item Must Have:
+	      \begin{itemize}
+		      \item Architektura modułowa z minimum 3 niezależnymi komponentami
+		      \item Dokumentacja techniczna pokrywająca 100\% interfejsów API
+	      \end{itemize}
+	\item Should Have:
+	      \begin{itemize}
+		      \item Możliwość aktualizacji konfiguracji bez przerywania pracy systemu w czasie poniżej 10 minut
+		      \item Średni czas dodania nowego typu czujnika poniżej 60 minut
+	      \end{itemize}
+	\item Could Have:
+	      \begin{itemize}
+		      \item Środowisko testowe jako alternatywa dla systemu produkcyjnego, pozwalające na symulację minimum 50 łodzi
+		      \item Możliwość przywrócenia poprzedniej wersji systemu w czasie poniżej 45 minut
+	      \end{itemize}
+	\item Won't Have:
+	      \begin{itemize}
+		      \item System automatycznego generowania dokumentacji technicznej z kodu źródłowego
+	      \end{itemize}
+\end{itemize}
+
+\end{document}

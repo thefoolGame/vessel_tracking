@@ -5,6 +5,7 @@ from sqlalchemy import (
     BigInteger,
     Integer,
     String,
+    UniqueConstraint,
     Float,
     ForeignKey,
     DateTime,
@@ -282,9 +283,6 @@ class SensorType(Base):
         Integer,
         ForeignKey("manufacturers.id", ondelete="RESTRICT"),
     )
-    measurement_unit = Column(String(50))
-    min_val = Column(Numeric)
-    max_val = Column(Numeric)
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
@@ -312,6 +310,9 @@ class Sensor(Base):
     installation_date = Column(Date)
     callibration_date = Column(Date)
     location_on_boat = Column(Text)
+    measurement_unit = Column(String(50))
+    min_val = Column(Numeric)
+    max_val = Column(Numeric)
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now()
@@ -381,6 +382,215 @@ class SensorReading(Base):
     __table_args__ = (
         Index("idx_sensor_readings_timestamp", timestamp),
         Index("idx_sensor_readings_sensor_timestamp", sensor_id, timestamp),
+    )
+
+
+class AisData(Base):
+    """Dane AIS (Automatic Identification System) dla łodzi"""
+
+    __tablename__ = "ais_data"
+
+    ais_data_id = Column(BigInteger, primary_key=True)
+    vessel_id = Column(
+        Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
+    )
+    timestamp = Column(DateTime(timezone=True), default=func.now())
+    position = Column(Geometry("POINT", srid=4326))  # Standard WGS84
+    course_over_ground = Column(Numeric(5, 2))  # Kurs nad ziemią w stopniach
+    speed_over_ground = Column(Numeric(5, 2))  # Prędkość nad ziemią w węzłach
+    rate_of_turn = Column(Numeric(5, 2))  # Prędkość skrętu
+    navigation_status = Column(Integer)  # Status nawigacyjny zgodnie ze standardem AIS
+    raw_data = Column(Text)  # Surowe dane AIS do ewentualnego dalszego przetwarzania
+
+    vessel = relationship("Vessel", backref="ais_data")
+
+    __table_args__ = (
+        Index("idx_ais_data_vessel_timestamp", vessel_id, timestamp),
+        Index("idx_ais_data_timestamp", timestamp),
+        Index("idx_ais_data_position", position, postgresql_using="gist"),
+    )
+
+
+class Location(Base):
+    """Historia pozycji łodzi z różnych źródeł"""
+
+    __tablename__ = "locations"
+
+    location_id = Column(BigInteger, primary_key=True)
+    vessel_id = Column(
+        Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
+    )
+    timestamp = Column(DateTime(timezone=True), default=func.now())
+    position = Column(Geometry("POINT", srid=4326))  # Standard WGS84
+    accuracy_meters = Column(Numeric(5, 2))
+    source = Column(
+        String(50),
+        CheckConstraint("source IN ('ais', 'gps', 'manual', 'calculated')"),
+        default="ais",
+    )
+
+    vessel = relationship("Vessel", backref="locations")
+
+    __table_args__ = (
+        Index("idx_locations_timestamp", timestamp),
+        Index("idx_locations_vessel_timestamp", vessel_id, timestamp),
+        Index("idx_locations_position", position, postgresql_using="gist"),
+    )
+
+
+class RoutePoint(Base):
+    """Punkty trasy dla łodzi"""
+
+    __tablename__ = "route_points"
+
+    route_point_id = Column(Integer, primary_key=True)
+    vessel_id = Column(
+        Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
+    )
+    sequence_number = Column(Integer, nullable=False)  # Kolejność punktów w trasie
+    planned_position = Column(Geometry("POINT", srid=4326))
+    planned_arrival_time = Column(DateTime(timezone=True))
+    planned_departure_time = Column(DateTime(timezone=True))
+    actual_arrival_time = Column(DateTime(timezone=True))
+    status = Column(
+        String(20),
+        CheckConstraint("status IN ('planned', 'reached', 'skipped', 'rescheduled')"),
+        default="planned",
+    )
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
+
+    vessel = relationship("Vessel", backref="route_points")
+
+    __table_args__ = (
+        UniqueConstraint("vessel_id", "sequence_number", name="uix_vessel_sequence"),
+        Index("idx_route_points_vessel", vessel_id),
+        Index("idx_route_points_planned_arrival", planned_arrival_time),
+    )
+
+
+class WeatherData(Base):
+    """Dane pogodowe dla różnych lokalizacji"""
+
+    __tablename__ = "weather_data"
+
+    weather_data_id = Column(BigInteger, primary_key=True)
+    location = Column(Geometry("POINT", srid=4326))  # Standard WGS84
+    timestamp = Column(DateTime(timezone=True), default=func.now())
+    temperature_celsius = Column(Numeric(4, 1))
+    wind_speed_knots = Column(Numeric(5, 1))
+    wind_direction_degrees = Column(Numeric(5, 1))
+    pressure_hpa = Column(Numeric(6, 1))
+    humidity_percent = Column(Numeric(5, 1))
+    precipitation_mm = Column(Numeric(5, 1))
+    visibility_km = Column(Numeric(5, 1))
+    wave_height_meters = Column(Numeric(4, 1))
+    wave_period_seconds = Column(Numeric(4, 1))
+    wave_direction_degrees = Column(Numeric(5, 1))
+    data_source = Column(String(100))
+
+    __table_args__ = (
+        Index("idx_weather_data_timestamp", timestamp),
+        Index("idx_weather_data_location", location, postgresql_using="gist"),
+    )
+
+
+class VesselParameter(Base):
+    """Parametry łodzi przechowywane jako pary klucz-wartość"""
+
+    __tablename__ = "vessel_parameters"
+
+    parameter_id = Column(Integer, primary_key=True)
+    vessel_id = Column(
+        Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String(100), nullable=False)
+    value = Column(Text, nullable=False)
+    unit = Column(String(50))
+    timestamp = Column(DateTime(timezone=True), default=func.now())
+
+    vessel = relationship("Vessel", backref="parameters")
+
+    __table_args__ = (
+        Index("idx_vessel_parameters_name", name),
+        Index("idx_vessel_parameters_vessel_name", vessel_id, name),
+    )
+
+
+class MaintenanceRecord(Base):
+    """Rekordy konserwacji i napraw łodzi"""
+
+    __tablename__ = "maintenance_records"
+
+    maintenance_id = Column(Integer, primary_key=True)
+    vessel_id = Column(
+        Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
+    )
+    maintenance_type = Column(String(100), nullable=False)
+    description = Column(Text)
+    start_date = Column(DateTime(timezone=True), nullable=False)
+    end_date = Column(DateTime(timezone=True))
+    status = Column(
+        String(20),
+        CheckConstraint(
+            "status IN ('planned', 'in_progress', 'completed', 'cancelled')"
+        ),
+        default="planned",
+    )
+    performed_by = Column(String(100))
+    cost = Column(Numeric(10, 2))
+    notes = Column(Text)
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
+
+    vessel = relationship("Vessel", backref="maintenance_records")
+
+    __table_args__ = (
+        Index("idx_maintenance_records_vessel", vessel_id),
+        Index("idx_maintenance_records_status", status),
+        Index("idx_maintenance_records_dates", start_date, end_date),
+    )
+
+
+class Alert(Base):
+    """Alerty i powiadomienia związane z łodziami i czujnikami"""
+
+    __tablename__ = "alerts"
+
+    alert_id = Column(Integer, primary_key=True)
+    vessel_id = Column(
+        Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
+    )
+    sensor_id = Column(Integer, ForeignKey("sensors.id", ondelete="SET NULL"))
+    alert_type = Column(String(50), nullable=False)
+    severity = Column(
+        String(20),
+        CheckConstraint("severity IN ('info', 'warning', 'critical', 'emergency')"),
+        nullable=False,
+    )
+    timestamp = Column(DateTime(timezone=True), default=func.now())
+    message = Column(Text, nullable=False)
+    acknowledged = Column(Boolean, default=False)
+    acknowledged_by = Column(Integer, ForeignKey("operators.id", ondelete="SET NULL"))
+    acknowledged_at = Column(DateTime(timezone=True))
+    resolved = Column(Boolean, default=False)
+    resolved_at = Column(DateTime(timezone=True))
+    notes = Column(Text)
+
+    vessel = relationship("Vessel", backref="alerts")
+    sensor = relationship("Sensor")
+    operator = relationship("Operator", foreign_keys=[acknowledged_by])
+
+    __table_args__ = (
+        Index("idx_alerts_vessel", vessel_id),
+        Index("idx_alerts_timestamp", timestamp),
+        Index("idx_alerts_severity", severity),
+        Index("idx_alerts_acknowledged", acknowledged),
+        Index("idx_alerts_resolved", resolved),
     )
 
 
