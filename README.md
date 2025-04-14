@@ -123,3 +123,8 @@ make apply-migration
 - **Hasło**: pgadmin_password
 
 Po zalogowaniu masz dostęp do serwera "Vessel Tracking Database" skonfigurowanego automatycznie.
+
+## Backend
+- **Port** 8000
+- **Docs** localhost:8000/docs
+- Testowanie Api na docsach lub Postman
