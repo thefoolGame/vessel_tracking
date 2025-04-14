@@ -48,11 +48,28 @@ services:
     volumes:
       - ./alembic:/app
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/vessel_tracking
+      DATABASE_URL: postgresql://postgres:postgres_password@postgres:5432/vessel_tracking
     networks:
       - vessel_network
     depends_on:
       - postgres
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vessel_tracking_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres_password@postgres:5432/vessel_tracking
+    networks:
+      - vessel_network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 networks:
   vessel_network:
