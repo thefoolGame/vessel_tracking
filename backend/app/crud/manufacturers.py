@@ -7,10 +7,25 @@ from pydantic import HttpUrl
 
 
 def create_manufacturer(db: Session, manufacturer: ManufacturerCreate) -> Manufacturer:
-    db_manufacturer = Manufacturer(**manufacturer.model_dump())
-    db.add(db_manufacturer)
-    db.commit()
-    db.refresh(db_manufacturer)
+    create_dict = manufacturer.model_dump()
+
+    # Jawna konwersja HttpUrl na string, jeśli istnieje
+    if "website" in create_dict and isinstance(create_dict["website"], HttpUrl):
+        create_dict["website"] = str(create_dict["website"])
+    elif "website" in create_dict and create_dict["website"] is None:
+        create_dict["website"] = None
+    if "contact_info" in create_dict and create_dict["contact_info"] is None:
+        pass
+
+    db_manufacturer = Manufacturer(**create_dict)
+    try:
+        db.add(db_manufacturer)
+        db.commit()
+        db.refresh(db_manufacturer)
+    except Exception as e:
+        db.rollback()
+        print(f"Error during manufacturer create commit: {e}")
+        raise
     return db_manufacturer
 
 
