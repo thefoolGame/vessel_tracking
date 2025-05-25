@@ -1,14 +1,18 @@
 from pydantic import BaseModel
+from typing import Optional
+
 
 class FleetBase(BaseModel):
     name: str
-    operator_id: int
+    description: Optional[str] = None
+
 
 class FleetCreate(FleetBase):
-    pass
+    operator_id: int
+
 
 class FleetResponse(FleetBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

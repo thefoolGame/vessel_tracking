@@ -4,4 +4,5 @@ SQLAlchemy
 databases[asyncpg]
 asyncpg
 psycopg2-binary
-geoalchemy2[shapely]
+geoalchemy2
+shapely

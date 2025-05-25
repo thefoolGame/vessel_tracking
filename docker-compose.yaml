@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -28,7 +28,7 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@vessel-tracking.com
       PGADMIN_DEFAULT_PASSWORD: pgadmin_password
-      PGADMIN_CONFIG_SERVER_MODE: 'True'
+      PGADMIN_CONFIG_SERVER_MODE: "True"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
       - ./database/pgadmin-servers.json:/pgadmin4/servers.json
@@ -60,7 +60,7 @@ services:
       dockerfile: Dockerfile
     container_name: vessel_tracking_backend
     ports:
-      - "8000:8000"
+      - "8010:8000"
     volumes:
       - ./backend/app:/app/app
     environment:
@@ -73,6 +73,7 @@ services:
 
 networks:
   vessel_network:
+    name: passat_backend_network
     driver: bridge
 
 volumes:

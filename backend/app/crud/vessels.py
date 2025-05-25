@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from app.models.models import Vessel, Fleet, Operator, VesselType
 from app.schemas.vessel import VesselCreate
 from fastapi import HTTPException
+
 
 def create_vessel(db: Session, vessel: VesselCreate):
     # sprawdzamy czy VesselType istnieje
@@ -20,7 +21,9 @@ def create_vessel(db: Session, vessel: VesselCreate):
         if not fleet:
             raise HTTPException(status_code=400, detail="Fleet does not exist")
         if fleet.operator_id != vessel.operator_id:
-            raise HTTPException(status_code=400, detail="Fleet operator and vessel operator mismatch")
+            raise HTTPException(
+                status_code=400, detail="Fleet operator and vessel operator mismatch"
+            )
 
     db_vessel = Vessel(**vessel.dict())
     db.add(db_vessel)
@@ -28,8 +31,30 @@ def create_vessel(db: Session, vessel: VesselCreate):
     db.refresh(db_vessel)
     return db_vessel
 
+
 def get_vessel(db: Session, vessel_id: int):
-    return db.query(Vessel).get(vessel_id)
+    return (
+        db.query(Vessel)
+        .options(
+            joinedload(Vessel.fleet),
+            joinedload(Vessel.vessel_type),
+            joinedload(Vessel.operator),
+        )
+        .filter(Vessel.id == vessel_id)
+        .first()
+    )
+
 
 def get_vessels(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Vessel).offset(skip).limit(limit).all()
+    return (
+        db.query(Vessel)
+        .options(
+            selectinload(Vessel.fleet),
+            selectinload(Vessel.vessel_type),
+            selectinload(Vessel.operator),
+        )
+        .order_by(Vessel.id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )

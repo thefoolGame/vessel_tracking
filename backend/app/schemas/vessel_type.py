@@ -1,14 +1,23 @@
 from pydantic import BaseModel
+from typing import Optional
+from decimal import Decimal
+
 
 class VesselTypeBase(BaseModel):
     name: str
-    manufacturer_id: int
+    description: Optional[str] = None
+    length_meters: Optional[Decimal] = None
+    width_meters: Optional[Decimal] = None
+    draft_meters: Optional[Decimal] = None
+    max_speed_knots: Optional[Decimal] = None
+
 
 class VesselTypeCreate(VesselTypeBase):
-    pass
+    manufacturer_id: int
+
 
 class VesselTypeResponse(VesselTypeBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

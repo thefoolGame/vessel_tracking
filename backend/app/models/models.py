@@ -6,7 +6,6 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
-    Float,
     ForeignKey,
     DateTime,
     Text,
@@ -16,13 +15,14 @@ from sqlalchemy import (
     Date,
     JSON,
     event,
+    or_,
+    and_,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.orm.session import object_session
 from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
-import datetime
 
 Base = declarative_base()
 
@@ -261,9 +261,6 @@ class SensorClass(Base):
 
     sensor_types = relationship("SensorType", back_populates="sensor_class")
 
-    def __repr__(self):
-        return f"<SensorClass(name='{self.name}')>"
-
 
 class SensorType(Base):
     """
@@ -421,20 +418,25 @@ class Location(Base):
         Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
     )
     timestamp = Column(DateTime(timezone=True), default=func.now())
-    position = Column(Geometry("POINT", srid=4326))  # Standard WGS84
+    position = Column(Geometry("POINT", srid=4326), nullable=False)  # Standard WGS84
+    heading = Column(Numeric(5, 2), nullable=False)
     accuracy_meters = Column(Numeric(5, 2))
     source = Column(
         String(50),
         CheckConstraint("source IN ('ais', 'gps', 'manual', 'calculated')"),
-        default="ais",
+        default="maunal",
     )
 
     vessel = relationship("Vessel", backref="locations")
+    weather_data = relationship("WeatherData", back_populates="location_entry")
 
     __table_args__ = (
         Index("idx_locations_timestamp", timestamp),
         Index("idx_locations_vessel_timestamp", vessel_id, timestamp),
         Index("idx_locations_position", position, postgresql_using="gist"),
+        CheckConstraint(
+            "heading >= 0 AND heading < 360", name="chk_location_heading_range"
+        ),
     )
 
 
@@ -448,7 +450,7 @@ class RoutePoint(Base):
         Integer, ForeignKey("vessels.id", ondelete="CASCADE"), nullable=False
     )
     sequence_number = Column(Integer, nullable=False)  # Kolejność punktów w trasie
-    planned_position = Column(Geometry("POINT", srid=4326))
+    planned_position = Column(Geometry("POINT", srid=4326), nullable=False)
     planned_arrival_time = Column(DateTime(timezone=True))
     planned_departure_time = Column(DateTime(timezone=True))
     actual_arrival_time = Column(DateTime(timezone=True))
@@ -456,6 +458,7 @@ class RoutePoint(Base):
         String(20),
         CheckConstraint("status IN ('planned', 'reached', 'skipped', 'rescheduled')"),
         default="planned",
+        nullable=False,
     )
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(
@@ -477,6 +480,7 @@ class WeatherData(Base):
     __tablename__ = "weather_data"
 
     weather_data_id = Column(BigInteger, primary_key=True)
+    location_id = Column(BigInteger, ForeignKey("locations.location_id"))
     location = Column(Geometry("POINT", srid=4326))  # Standard WGS84
     timestamp = Column(DateTime(timezone=True), default=func.now())
     temperature_celsius = Column(Numeric(4, 1))
@@ -491,9 +495,31 @@ class WeatherData(Base):
     wave_direction_degrees = Column(Numeric(5, 1))
     data_source = Column(String(100))
 
+    location_entry = relationship("Location", back_populates="weather_data")
+
     __table_args__ = (
         Index("idx_weather_data_timestamp", timestamp),
         Index("idx_weather_data_location", location, postgresql_using="gist"),
+        Index("idx_weather_data_location_id", location_id),
+        CheckConstraint(
+            or_(
+                and_(location_id != None, location == None),
+                and_(location_id == None, location != None),
+            ),
+            name="chk_weather_data_location_source",
+        ),
+        CheckConstraint(
+            "wind_direction_degrees >= 0 AND wind_direction_degrees < 360",
+            name="chk_weather_wind_dir_range",
+        ),
+        CheckConstraint(
+            "wave_direction_degrees >= 0 AND wave_direction_degrees < 360",
+            name="chk_weather_wave_dir_range",
+        ),
+        CheckConstraint(
+            "humidity_percent >= 0 AND humidity_percent <= 100",
+            name="chk_weather_humidity_range",
+        ),
     )
 
 
