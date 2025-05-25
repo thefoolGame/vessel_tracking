@@ -68,6 +68,11 @@ def get_operators_with_counts(
     return results
 
 
+def get_operators(db: Session, skip: int = 0, limit: int = 100) -> List[dict]:
+    """Pobiera listę operatorów"""
+    return db.query(Operator).order_by(Operator.name).offset(skip).limit(limit).all()
+
+
 # Funkcja tworzenia pozostaje prosta, bo liczby flot/statków będą 0 dla nowego operatora
 def create_operator(
     db: Session, operator: OperatorCreate
