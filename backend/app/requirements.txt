@@ -6,3 +6,4 @@ asyncpg
 psycopg2-binary
 geoalchemy2
 shapely
+pydantic[email]
