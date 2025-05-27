@@ -26,17 +26,27 @@ def get_db():
 def create_new_sensor_class(
     sensor_class: SensorClassCreate, db: Session = Depends(get_db)
 ):
-    try:
-        return crud_sensor_class.create_sensor_class(db=db, sensor_class=sensor_class)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    created_sensor_class, error_message = crud_sensor_class.create_sensor_class(
+        db=db, sensor_class=sensor_class
+    )
+    if error_message:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=error_message
+        )
+    if not created_sensor_class:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not create sensor class",
+        )
+    return created_sensor_class
 
 
 @router.get("/", response_model=List[SensorClassResponse])
 def read_all_sensor_classes(
-    skip: int = 0, limit: int = 1000, db: Session = Depends(get_db)
+    skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 ):
-    return crud_sensor_class.get_sensor_classes(db, skip=skip, limit=limit)
+    sensor_classes = crud_sensor_class.get_sensor_classes(db, skip=skip, limit=limit)
+    return sensor_classes
 
 
 @router.get("/{sensor_class_id}", response_model=SensorClassResponse)
@@ -46,7 +56,7 @@ def read_single_sensor_class(sensor_class_id: int, db: Session = Depends(get_db)
     )
     if db_sensor_class is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Sensor Class not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Sensor class not found"
         )
     return db_sensor_class
 
@@ -54,41 +64,46 @@ def read_single_sensor_class(sensor_class_id: int, db: Session = Depends(get_db)
 @router.put("/{sensor_class_id}", response_model=SensorClassResponse)
 def update_existing_sensor_class(
     sensor_class_id: int,
-    sensor_class_update: SensorClassUpdate,
+    sensor_class_in: SensorClassUpdate,
     db: Session = Depends(get_db),
 ):
-    try:
-        updated_sensor_class = crud_sensor_class.update_sensor_class(
-            db=db,
-            sensor_class_id=sensor_class_id,
-            sensor_class_update=sensor_class_update,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-    if updated_sensor_class is None:
+    updated_sensor_class, error_message = crud_sensor_class.update_sensor_class(
+        db=db, sensor_class_id=sensor_class_id, sensor_class_update=sensor_class_in
+    )
+    if error_message:
+        if "not found" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=error_message
+            )
+        else:  # Inny błąd, np. konflikt nazwy
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=error_message
+            )
+    if not updated_sensor_class:  # Dodatkowe zabezpieczenie
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Sensor Class not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not update sensor class",
         )
     return updated_sensor_class
 
 
 @router.delete("/{sensor_class_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_existing_sensor_class(sensor_class_id: int, db: Session = Depends(get_db)):
-    try:
-        deleted = crud_sensor_class.delete_sensor_class(
-            db, sensor_class_id=sensor_class_id
-        )
-        if not deleted:
+    deleted_info, error_message = crud_sensor_class.delete_sensor_class(
+        db, sensor_class_id=sensor_class_id
+    )
+    if error_message:
+        if "not found" in error_message.lower():
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Sensor Class not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail=error_message
             )
-    except (
-        Exception
-    ) as e:  # Przechwyć błędy z CRUD (np. IntegrityError, jeśli są zależności)
-        # Można by bardziej szczegółowo rozróżniać błędy
+        else:  # Np. błąd zależności
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail=error_message
+            )
+    if not deleted_info and not error_message:  # Dodatkowe zabezpieczenie
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Could not delete sensor class: {str(e)}",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sensor class not found or could not be processed.",
         )
-    return None
+    return None  # Dla 204 No Content

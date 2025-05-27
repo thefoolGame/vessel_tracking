@@ -184,32 +184,16 @@ class Vessel(Base):
 
     @validates("fleet_id")
     def validate_fleet(self, key, fleet_id):
-        """Walidacja zapewniająca, że po przypisaniu floty operator jest zgodny z operatorem floty"""
+        """Walidacja zapewniająca, że operator jest zgodny z operatorem floty (jeśli przypisana)"""
         if fleet_id is not None:
             session = object_session(self)
             if session:
                 fleet = session.query(Fleet).get(fleet_id)
-                if fleet:
-                    # Automatycznie aktualizujemy operator_id, aby był zgodny z flotą
-                    self.operator_id = fleet.operator_id
-            else:
-                # Gdy obiekt nie jest jeszcze w sesji (nowy obiekt)
-                # Zachowaj wartość fleet_id, walidacja zostanie wykonana przed zapisem
-                pass
-        return fleet_id
-
-    @validates("operator_id")
-    def validate_operator(self, key, operator_id):
-        """Walidacja zapewniająca, że operator jest zgodny z operatorem floty (jeśli przypisana)"""
-        if self.fleet_id is not None:
-            session = object_session(self)
-            if session:
-                fleet = session.query(Fleet).get(self.fleet_id)
-                if fleet and operator_id != fleet.operator_id:
+                if fleet and self.operator_id != fleet.operator_id:
                     raise ValueError(
-                        "Operator must match the fleet's operator when vessel is assigned to a fleet"
+                        "Operator must match the fleet's operator when vessel is assigned to a fleet (validates)"
                     )
-        return operator_id
+        return fleet_id
 
     def validate_sensors(self):
         """
@@ -631,5 +615,5 @@ def check_vessel_fleet_operator_consistency(mapper, connection, vessel):
             fleet = session.query(Fleet).get(vessel.fleet_id)
             if fleet and vessel.operator_id != fleet.operator_id:
                 raise ValueError(
-                    "Operator must match the fleet's operator when vessel is assigned to a fleet"
+                    "Operator must match the fleet's operator when vessel is assigned to a fleet (event)"
                 )

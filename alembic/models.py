@@ -207,7 +207,7 @@ class Vessel(Base):
                 fleet = session.query(Fleet).get(self.fleet_id)
                 if fleet and operator_id != fleet.operator_id:
                     raise ValueError(
-                        "Operator must match the fleet's operator when vessel is assigned to a fleet"
+                        "Operator must match the fleet's operator when vessel is assigned to a fleet (validates)"
                     )
         return operator_id
 
@@ -631,5 +631,5 @@ def check_vessel_fleet_operator_consistency(mapper, connection, vessel):
             fleet = session.query(Fleet).get(vessel.fleet_id)
             if fleet and vessel.operator_id != fleet.operator_id:
                 raise ValueError(
-                    "Operator must match the fleet's operator when vessel is assigned to a fleet"
+                    "Operator must match the fleet's operator when vessel is assigned to a fleet (event)"
                 )
