@@ -8,7 +8,9 @@ from app.schemas.vessel import (
     VesselResponse,
     VesselSensorConfigurationStatusResponse,
 )
+from app.schemas.location import LocationResponse
 from app.crud import vessels as crud_vessel
+from app.crud import locations as crud_location
 from app.core.database import SessionLocal
 
 router = APIRouter(prefix="/vessels", tags=["Vessels"])
@@ -131,3 +133,24 @@ def read_vessel_sensor_configuration_status(
             detail="Could not retrieve sensor configuration status.",
         )
     return status_response
+
+
+@router.get(
+    "/{vessel_id}/locations/latest",  # Lub w routerze dla Location, np. /locations/vessel/{vessel_id}/latest
+    response_model=Optional[LocationResponse],  # Może nie być lokalizacji
+    summary="Get the latest location for a specific vessel",
+)
+def get_latest_location_for_vessel(vessel_id: int, db: Session = Depends(get_db)):
+    # Sprawdź, czy statek istnieje
+    db_vessel = crud_vessel.get_vessel(db, vessel_id=vessel_id)
+    if not db_vessel:
+        raise HTTPException(status_code=404, detail="Vessel not found")
+
+    latest_location = crud_location.get_latest_location_for_vessel(
+        db, vessel_id=vessel_id
+    )
+    if not latest_location:
+        # Możesz zwrócić 404 lub pustą odpowiedź, jeśli brak lokalizacji jest normalne
+        # raise HTTPException(status_code=404, detail="No location data found for this vessel")
+        return None
+    return latest_location

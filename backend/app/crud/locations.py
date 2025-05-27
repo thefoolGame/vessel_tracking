@@ -108,3 +108,12 @@ def get_latest_location_for_each_vessel(
             )
         )
     return response_data
+
+
+def get_latest_location_for_vessel(db: Session, vessel_id: int) -> Optional[Location]:
+    return (
+        db.query(Location)
+        .filter(Location.vessel_id == vessel_id)
+        .order_by(Location.timestamp.desc())
+        .first()
+    )
