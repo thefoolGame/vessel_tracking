@@ -7,6 +7,7 @@ from decimal import Decimal  # Jeśli jakieś pola Vessel lub zagnieżdżone teg
 from .vessel_type import VesselTypeResponse
 from .fleet import FleetResponse
 from .operator import OperatorResponse
+from .route_point import RoutePointResponse
 
 
 class VesselBase(BaseModel):
@@ -107,6 +108,18 @@ class VesselSensorConfigurationStatusResponse(BaseModel):
     allowed_classes: List[AllowedSensorClassDetail] = Field(
         description="List of all sensor classes (required and optional) allowed for this vessel type, with their current installation status."
     )
+
+    class Config:
+        from_attributes = True
+
+
+class VesselMapDataResponse(BaseModel):
+    vessel_id: int
+    name: str
+    latest_position_wkt: Optional[str] = None
+    latest_heading: Optional[Decimal] = None
+    latest_timestamp: Optional[datetime] = None
+    planned_route_points: Optional[List[RoutePointResponse]] = None
 
     class Config:
         from_attributes = True

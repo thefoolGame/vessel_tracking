@@ -7,10 +7,10 @@ from geoalchemy2.elements import WKBElement
 
 
 class LocationBase(BaseModel):
-    vessel_id: int
     position: str  # WKT format
     heading: Decimal = Field(..., ge=0, lt=360)
     accuracy_meters: Optional[Decimal] = Field(default=None, ge=0)
+    timestamp: datetime = Field(default_factory=datetime.now)
     source: str = Field(default="manual", pattern=r"^(ais|gps|manual|calculated)$")
 
     @validator("position")
@@ -49,14 +49,17 @@ class LocationCreate(LocationBase):
     pass
 
 
-class LocationResponse(BaseModel):
+class LocationUpdate(BaseModel):
+    timestamp: Optional[datetime] = None
+    position: Optional[str] = Field(default=None, example="POINT (14.568 54.124)")
+    heading: Optional[Decimal] = Field(default=None, ge=0, lt=360)
+    accuracy_meters: Optional[Decimal] = Field(default=None, ge=0)
+    source: Optional[str] = Field(default=None, pattern="^(ais|gps|manual|calculated)$")
+
+
+class LocationResponse(LocationBase):
     location_id: int
     vessel_id: int
-    timestamp: datetime
-    position: str  # WKT format, np. "POINT (lon lat)"
-    heading: Decimal
-    accuracy_meters: Optional[float] = None
-    source: str
 
     @field_validator("position", mode="before")
     @classmethod

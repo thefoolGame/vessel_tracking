@@ -19,7 +19,8 @@ from app.routes import (
     alert,
     maintenance,
     vessel_parameter,
-    weather
+    weather,
+    public,
 )
 
 Base.metadata.create_all(bind=engine)
@@ -42,8 +43,10 @@ app.include_router(locations.router)
 app.include_router(route_points.router)
 app.include_router(alert.router)
 app.include_router(weather.router)
+app.include_router(public.router)
 
 
 @app.get("/")
 def root():
     return {"message": "Backend działa poprawnie"}
+

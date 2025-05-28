@@ -404,7 +404,7 @@ class Location(Base):
     timestamp = Column(DateTime(timezone=True), default=func.now())
     position = Column(Geometry("POINT", srid=4326), nullable=False)  # Standard WGS84
     heading = Column(Numeric(5, 2), nullable=False)
-    accuracy_meters = Column(Numeric(5, 2))
+    accuracy_meters = Column(Numeric(7, 2))
     source = Column(
         String(50),
         CheckConstraint("source IN ('ais', 'gps', 'manual', 'calculated')"),
