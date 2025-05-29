@@ -2,16 +2,22 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
 from app.schemas.vessel import (
     VesselCreate,
     VesselUpdate,
     VesselResponse,
     VesselSensorConfigurationStatusResponse,
 )
+from app.schemas.sensor_reading import (
+    SensorReadingResponse,
+)
 from app.schemas.location import LocationResponse
 from app.crud import vessels as crud_vessel
 from app.crud import locations as crud_location
+from app.crud import sensor_readings as crud_sensor_reading
 from app.core.database import SessionLocal
+
 
 router = APIRouter(prefix="/vessels", tags=["Vessels"])
 
@@ -154,3 +160,39 @@ def get_latest_location_for_vessel(vessel_id: int, db: Session = Depends(get_db)
         # raise HTTPException(status_code=404, detail="No location data found for this vessel")
         return None
     return latest_location
+
+
+@router.get(
+    "/{vessel_id}/sensor-readings/",  # Pełna ścieżka: /vessels/{vessel_id}/sensor-readings/
+    response_model=List[SensorReadingResponse],
+    summary="Get all sensor readings for a specific vessel (public)",
+)
+def public_get_readings_for_vessel(
+    vessel_id: int,
+    start_time: Optional[datetime] = Query(None, description="Start time (ISO 8601)"),
+    end_time: Optional[datetime] = Query(None, description="End time (ISO 8601)"),
+    sensor_ids: Optional[List[int]] = Query(
+        None, description="List of sensor IDs to filter by"
+    ),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10000, ge=1, le=50000),
+    db: Session = Depends(get_db),
+):
+    # Sprawdź, czy statek istnieje
+    db_vessel = crud_vessel.get_vessel(db, vessel_id=vessel_id)
+    if not db_vessel:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vessel with id {vessel_id} not found",
+        )
+
+    readings = crud_sensor_reading.get_sensor_readings_for_vessel(
+        db=db,
+        vessel_id=vessel_id,
+        start_time=start_time,
+        end_time=end_time,
+        sensor_ids=sensor_ids,  # Przekaż bezpośrednio listę int
+        skip=skip,
+        limit=limit,
+    )
+    return readings
