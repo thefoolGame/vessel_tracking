@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title | default("Odczyty Sensorów") }}{% endblock %}
+
+{% block head_extra %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        .chart-container-single { 
+            position: relative;
+            margin: auto;
+            height: 60vh;
+            max-width: 1200px;
+        }
+        .charts-grid-container { 
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Responsywna siatka */
+            gap: 1rem; /* Odstęp między wykresami */
+            margin-top: 1.5rem; /* mb-6 */
+        }
+        .chart-container-multiple { 
+            position: relative;
+            height: 300px; /* Mniejsza wysokość dla wykresów w siatce */
+            background-color: #374151; /* bg-gray-700 */
+            padding: 0.5rem; /* p-2 */
+            border-radius: 0.375rem; /* rounded */
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="py-8"> {# Usunięto container mx-auto px-4, bo jest już w base.html #}
+    <h1 class="text-3xl font-semibold text-gray-100 mb-6 text-center md:text-left">{{ page_title }}</h1>
+
+    <div class="bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
+        <!-- Panel Kontrolny -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 items-end">
+            <div>
+                <label for="vesselSelect" class="block text-sm font-medium text-gray-300 mb-1">Wybierz Statek:</label>
+                <select id="vesselSelect" name="vessel_id" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Ładowanie statków...</option>
+                </select>
+            </div>
+            <div>
+                <label for="sensorSelect" class="block text-sm font-medium text-gray-300 mb-1">Wybierz Sensor:</label>
+                <select id="sensorSelect" name="sensor_id" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500" disabled>
+                    <option value="">Najpierw wybierz statek...</option>
+                </select>
+            </div>
+            <div>
+                <label for="timeRangeSelect" class="block text-sm font-medium text-gray-300 mb-1">Zakres Czasu:</label>
+                <select id="timeRangeSelect" name="time_range" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500" disabled>
+                    <option value="1h">Ostatnia godzina</option>
+                    <option value="6h">Ostatnie 6 godzin</option>
+                    <option value="24h" selected>Ostatnie 24 godziny</option>
+                    <option value="7d">Ostatnie 7 dni</option>
+                    <option value="30d">Ostatnie 30 dni</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="chartError" class="text-red-400 mb-4 hidden"></div>
+
+        <div id="singleChartContainerWrapper" class="chart-container-single bg-gray-750 p-2 rounded hidden">
+            <canvas id="sensorReadingsChart"></canvas>
+        </div>
+
+        <div id="multipleChartsContainer" class="charts-grid-container">
+            <!-- Tutaj JS będzie dynamicznie dodawał canvasy dla każdego sensora -->
+        </div>
+
+        <div id="noDataMessage" class="text-center text-gray-400 py-8 hidden">
+            <p>Brak danych odczytów dla wybranego sensora/statku i zakresu czasu.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+    const PRESELECTED_VESSEL_ID = {{ preselected_vessel_id if preselected_vessel_id is not none else 'null' }};
+    const PRESELECTED_SENSOR_ID = {{ preselected_sensor_id if preselected_sensor_id is not none else 'null' }};
+</script>
+<script src="{{ url_for('static', path='js/sensor_readings_chart.js') }}"></script>
+{% endblock %}

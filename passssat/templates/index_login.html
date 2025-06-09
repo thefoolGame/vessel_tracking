@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PassApp</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageElement = document.getElementById('message');
+    
+            try {
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+    
+                const response = await fetch('/token', {
+                    method: 'POST',
+                    body: formData
+                });
+    
+                // Nie potrzebujemy już data.access_token, bo serwer ustawił ciasteczko
+                // const data = await response.json(); // Możemy to pominąć, jeśli nie używamy tokenu z JSON
+    
+                if (response.ok) {
+                    // localStorage.setItem('access_token', data.access_token); // USUNIĘTE
+                    showMessage('Login successful! Redirecting...', 'success');
+    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const nextUrl = urlParams.get('next');
+    
+                    setTimeout(() => {
+                        if (nextUrl) {
+                            window.location.href = nextUrl;
+                        } else {
+                            // Przekieruj na stronę główną mapy lub inną domyślną stronę po zalogowaniu
+                            window.location.href = "{{ url_for('map_page') }}"; // Przykład: przekierowanie na mapę
+                        }
+                    }, 1000);
+                } else {
+                    const errorData = await response.json(); // Odczytaj błąd z odpowiedzi
+                    showMessage(errorData.detail || 'Login failed. Please check your credentials.', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('An error occurred during login. Please try again.', 'error');
+            }
+        }
+    
+        function showMessage(message, type) {
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = message;
+            messageElement.className = 'mt-4 text-center p-2 rounded';
+            if (type === 'success') {
+                messageElement.classList.add('bg-green-700', 'text-white');
+            } else if (type === 'error') {
+                messageElement.classList.add('bg-red-700', 'text-white');
+            }
+            messageElement.style.display = 'block';
+        }
+    
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('loginForm'); // Użyj ID formularza
+            form.addEventListener('submit', handleLogin);
+        });
+    </script>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans min-h-screen flex items-center justify-center">
+
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 class="text-3xl font-bold mb-6 text-center text-white">Login to PassApp</h2>
+
+        <form id="loginForm">
+            <div class="mb-4">
+                <label for="username" class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                <input type="text" id="username" name="username" required
+                       class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <div class="mb-6">
+                <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                <input type="password" id="password" name="password" required
+                       class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <button id="login" type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                Login
+            </button>
+        </form>
+
+        <!-- Message display area -->
+        <div id="message" style="display: none;" class="mt-4 text-center p-2 rounded"></div>
+
+        <p class="mt-4 text-sm text-center text-gray-400">
+            Don't have an account? <a href="/register" class="text-blue-400 hover:underline">Register</a>
+        </p>
+    </div>
+
+</body>
+</html>

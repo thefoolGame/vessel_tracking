@@ -1,0 +1,21 @@
+services:
+  passat_app_server:
+    extends:
+      file: docker-compose.common.yml
+      service: app-template
+    container_name: passat_www
+    environment:
+      VESSEL_API_URL: http://backend:8000
+    ports:
+      - "8005:8000"
+    networks:
+      - reverse_proxy_network
+      - database_network
+
+networks:
+  reverse_proxy_network:
+    name: reverse_proxy_network
+    external: true
+  database_network:
+    name: passat_backend_network
+    external: true

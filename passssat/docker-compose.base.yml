@@ -1,0 +1,19 @@
+services:
+  passat_app_local:
+    extends:
+      file: docker-compose.common.yml
+      service: app-template
+    container_name: passat_www_local
+    environment:
+      VESSEL_API_URL: http://backend:8000
+    networks:
+      - database_network
+    ports:
+      - "8000:8000"
+    profiles:
+      - local
+
+networks:
+  database_network:
+    name: passat_backend_network
+    external: true

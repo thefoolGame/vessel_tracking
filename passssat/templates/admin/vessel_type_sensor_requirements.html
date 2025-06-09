@@ -1,0 +1,126 @@
+{% extends "admin/admin_base.html" %}
+
+{% block admin_title %}
+    Wymagania czujników dla {% if vessel_type %}{{ vessel_type.name }}{% else %}Nieznanego Typu Statku{% endif %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="bg-gray-800 p-6 rounded-lg shadow-md">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-100">
+            {% if vessel_type %}
+                Wymagania czujników dla typu statku: <span class="text-blue-400">{{ vessel_type.name }} (ID: {{ vessel_type.id }})</span>
+            {% else %}
+                Błąd ładowania danych typu statku
+            {% endif %}
+        </h1>
+        <a href="{{ url_for('admin_serve_vessel_types_list') }}" class="text-sm text-blue-400 hover:underline">&larr; Powrót do listy typów statków</a>
+    </div>
+
+    {# Komunikaty Flash #}
+    {% if success_message %}
+        <div class="bg-green-600 text-white p-3 rounded mb-4" role="alert">{{ success_message }}</div>
+    {% endif %}
+    {% if error_message %}
+        <div class="bg-red-700 text-white p-3 rounded mb-4" role="alert">{{ error_message }}</div>
+    {% endif %}
+    {# Ogólny błąd ładowania strony #}
+    {% if page_error and not vessel_type %} <!-- Pokaż tylko jeśli nie udało się załadować vessel_type -->
+        <div class="bg-red-700 text-white p-3 rounded mb-4" role="alert">
+            <strong>Błąd ładowania danych:</strong> {{ page_error }}
+        </div>
+    {% endif %}
+
+
+    {% if vessel_type %} {# Kontynuuj tylko jeśli dane vessel_type zostały załadowane #}
+        <!-- Sekcja: Aktualne wymagania -->
+        <h2 class="text-xl font-medium text-gray-200 mb-3 mt-4">Aktualne wymagania:</h2>
+        {% if requirements and requirements|length > 0 %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto mb-6">
+                    <thead class="bg-gray-700 text-gray-300 uppercase text-xs">
+                        <tr>
+                            <th class="py-2 px-3 text-left">Klasa Czujnika</th>
+                            <th class="py-2 px-3 text-center">Wymagany</th>
+                            <th class="py-2 px-3 text-center">Ilość</th>
+                            <th class="py-2 px-3 text-center">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-200 text-sm">
+                        {% for req in requirements %}
+                        <tr class="border-b border-gray-700 hover:bg-gray-750">
+                            <td class="py-2 px-3">{{ req.sensor_class.name }} (ID: {{ req.sensor_class.id }})</td>
+                            <td class="py-2 px-3 text-center">
+                                <form action="{{ url_for('admin_handle_update_sensor_requirement', vessel_type_id=vessel_type.id, sensor_class_id=req.sensor_class.id) }}" method="POST" class="inline-flex items-center">
+                                    <input type="hidden" name="quantity" value="{{ req.quantity }}"> <!-- Prześlij obecną ilość, jeśli tylko zmieniasz 'required' -->
+                                    <input type="checkbox" name="required" value="true" {% if req.required %}checked{% endif %}
+                                           onchange="this.form.submit()" class="h-4 w-4 text-blue-500 border-gray-600 rounded bg-gray-700 focus:ring-blue-600">
+                                </form>
+                            </td>
+                            <td class="py-2 px-3 text-center">
+                                <form action="{{ url_for('admin_handle_update_sensor_requirement', vessel_type_id=vessel_type.id, sensor_class_id=req.sensor_class.id) }}" method="POST" class="inline-flex items-center">
+                                    <input type="hidden" name="required" value="{{ 'true' if req.required else 'false' }}"> <!-- Prześlij obecny status 'required' -->
+                                    <input type="number" name="quantity" value="{{ req.quantity }}" min="1" required
+                                           class="w-16 bg-gray-700 text-white p-1 rounded border border-gray-600 text-sm text-center">
+                                    <button type="submit" class="ml-2 text-xs bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-2 rounded">Zapisz Ilość</button>
+                                </form>
+                            </td>
+                            <td class="py-2 px-3 text-center">
+                                <form action="{{ url_for('admin_handle_remove_sensor_requirement', vessel_type_id=vessel_type.id, sensor_class_id=req.sensor_class.id) }}" method="POST" class="inline-block" onsubmit="return confirm('Czy na pewno chcesz usunąć to wymaganie czujnika?');">
+                                    <button type="submit" class="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Usuń</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-400 mb-6">Brak zdefiniowanych wymagań czujników dla tego typu statku.</p>
+        {% endif %}
+
+        <!-- Sekcja: Dodaj nowe wymaganie -->
+        <h2 class="text-xl font-medium text-gray-200 mb-3 mt-8 border-t border-gray-700 pt-4">Dodaj nowe wymaganie czujnika:</h2>
+        {% if available_sensor_classes and available_sensor_classes|length > 0 %}
+            <form action="{{ url_for('admin_handle_add_sensor_requirement', vessel_type_id=vessel_type.id) }}" method="POST" class="space-y-4 bg-gray-750 p-4 rounded-md">
+                <div>
+                    <label for="sensor_class_id" class="block text-sm font-medium text-gray-300">Klasa czujnika:</label>
+                    <select name="sensor_class_id" id="sensor_class_id" required class="mt-1 block w-full p-2 rounded bg-gray-700 border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Wybierz klasę...</option>
+                        {% for sc in available_sensor_classes %}
+                            {# Opcjonalnie: filtruj, aby nie pokazywać już dodanych klas #}
+                            {% set is_already_added = false %}
+                            {% for existing_req in requirements %}
+                                {% if existing_req.sensor_class.id == sc.id %}
+                                    {% set is_already_added = true %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if not is_already_added %}
+                                <option value="{{ sc.id }}">{{ sc.name }} (ID: {{ sc.id }})</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-300">Ilość:</label>
+                    <input type="number" name="quantity" id="quantity" value="1" min="1" required class="mt-1 block w-full p-2 rounded bg-gray-700 border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="required" id="required_checkbox" value="true" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded mr-2 focus:ring-blue-500">
+                    <label for="required_checkbox" class="text-sm font-medium text-gray-300">Wymagany</label>
+                </div>
+                <div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Dodaj Wymaganie
+                    </button>
+                </div>
+            </form>
+        {% else %}
+            <p class="text-gray-400">Brak dostępnych klas czujników do dodania lub wystąpił błąd ich ładowania.</p>
+        {% endif %}
+    {% endif %} {# Koniec bloku if vessel_type #}
+</div>
+{% endblock %}

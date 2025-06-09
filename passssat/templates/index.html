@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Mapa Statków{% endblock %}
+
+{% block head_extra %}
+    <style>
+        #map-container { height: 70vh; /* Dostosuj wysokość mapy */ }
+        #map { width: 100%; height: 100%; background-color: #4A5568; /* bg-gray-700 */ border-radius: 0.375rem; /* rounded-md */ box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-md */ }
+        #vessel-info-panel { max-height: 70vh; /* Dopasuj do wysokości mapy */ }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-4">
+    <div id="map-container" class="flex-grow relative">
+        <div id="map"></div> 
+    </div>
+
+    <div id="vessel-info-panel"
+         class="w-full md:w-72 lg:w-80 bg-gray-800 text-gray-200 p-4 rounded-md shadow-lg transition-transform transform translate-x-full md:translate-x-0 opacity-0 md:opacity-100 md:sticky md:top-4 self-start overflow-y-auto">
+        <h3 id="panel-vessel-name" class="text-xl font-semibold mb-3">Wybierz statek</h3>
+        <div id="panel-vessel-details">
+            <p class="text-gray-400">Wybierz statek na mapie, aby zobaczyć szczegóły.</p>
+        </div>
+    </div>
+</div>
+
+<div id="selected-vessel-history-container" class="my-6 p-4 bg-gray-800 shadow-md rounded-lg">
+    <h3 class="text-xl font-semibold mb-3 text-gray-200">Historia pozycji dla: <span id="history-vessel-name" class="text-blue-400"></span></h3>
+    <div class="max-h-96 overflow-y-auto">
+        <table class="min-w-full table-auto border-collapse border border-gray-700 shadow-md">
+            <thead class="bg-gray-700 text-sm md:text-base sticky top-0 z-10"> {# Zwiększono z-index dla nagłówka tabeli #}
+                <tr>
+                    <th class="border p-2">Timestamp</th>
+                    <th class="border p-2">Pozycja</th>
+                    <th class="border p-2">Kurs</th>
+                    <th class="border p-2">Źródło</th>
+                </tr>
+            </thead>
+            <tbody id="selected-vessel-history-table-body" class="text-center text-xs md:text-sm bg-gray-800">
+                <tr><td colspan="4" class="p-4 text-gray-500">Wybierz statek, aby zobaczyć historię jego pozycji.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <script src="{{ url_for('static', path='js/map_manager.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const vesselInfoPanel = document.getElementById('vessel-info-panel');
+        });
+    </script>
+{% endblock %}

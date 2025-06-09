@@ -1,0 +1,8 @@
+services:
+  app-template:
+    build: .
+    environment:
+      - HOST=172.17.0.1
+      - PORT=42069
+    volumes:
+      - .:/app

@@ -1,0 +1,136 @@
+{% extends "admin/admin_base.html" %}
+
+{% block admin_title %}{{ page_title | default("Zarządzanie Historią Lokalizacji") }}{% endblock %}
+
+{% block admin_content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
+<style>
+    #location-history-map { height: 450px; } /* Mniejsza mapa niż dla tras */
+    .leaflet-grab { cursor: grab; }
+</style>
+
+<div class="bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
+    <!-- Komunikaty Flash -->
+    {% if request.session.get("flash_success_location") %}
+    <div class="bg-green-600 text-white p-3 rounded mb-4" role="alert">
+        {{ request.session.pop("flash_success_location") }}
+    </div>
+    {% endif %}
+    {% if request.session.get("flash_error_location") %}
+    <div class="bg-red-700 text-white p-3 rounded mb-4" role="alert">
+        {{ request.session.pop("flash_error_location") }}
+    </div>
+    {% endif %}
+
+    <div class="mb-6">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-100">
+            {{ page_title }}
+        </h1>
+        {% if vessel %}
+        <p class="text-sm text-gray-400">
+            Statek: <span class="font-semibold">{{ vessel.name }} (ID: {{ vessel.id }})</span>
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Kolumna z Mapą -->
+        <div class="lg:col-span-2 bg-gray-750 p-4 rounded-lg shadow">
+            <h2 class="text-xl font-semibold text-gray-200 mb-3">Mapa Historii Lokalizacji</h2>
+            <div id="location-history-map" class="w-full bg-gray-700 rounded-md shadow-inner">
+                <!-- Mapa Leaflet zostanie tutaj zainicjowana -->
+            </div>
+            <div class="mt-2 text-xs text-gray-400">
+                Kliknij na mapie, aby dodać nowy wpis lokalizacji.
+            </div>
+        </div>
+
+        <!-- Kolumna z Formularzem i Listą Wpisów -->
+        <div class="lg:col-span-1 bg-gray-750 p-4 rounded-lg shadow">
+            <h2 class="text-xl font-semibold text-gray-200 mb-3">Zarządzaj Wpisem</h2>
+            
+            <div id="location-entry-form-container" class="bg-gray-700 p-3 rounded-md mb-4">
+                <h3 id="location-entry-form-title" class="text-lg font-semibold text-gray-100 mb-2">Dodaj Wpis Lokalizacji</h3>
+                <form id="locationEntryForm" class="space-y-3 text-sm">
+                    <input type="hidden" name="location_id_form" id="location_id_form_field" value="">
+                    <input type="hidden" name="vessel_id_form" id="vessel_id_form_field_loc" value="{{ vessel.id }}"> <!-- Inne ID dla pewności -->
+                    
+                    <div>
+                        <label for="loc_timestamp" class="block text-xs font-medium text-gray-300">Timestamp <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" id="loc_timestamp" name="timestamp" required
+                               class="mt-1 w-full p-1.5 rounded bg-gray-600 text-white border border-gray-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="loc_lat" class="block text-xs font-medium text-gray-300">Szer. (Lat) <span class="text-red-500">*</span></label>
+                            <input type="number" step="any" id="loc_lat" name="latitude" required
+                                   class="mt-1 w-full p-1.5 rounded bg-gray-600 text-white border border-gray-500">
+                        </div>
+                        <div>
+                            <label for="loc_lon" class="block text-xs font-medium text-gray-300">Dł. (Lon) <span class="text-red-500">*</span></label>
+                            <input type="number" step="any" id="loc_lon" name="longitude" required
+                                   class="mt-1 w-full p-1.5 rounded bg-gray-600 text-white border border-gray-500">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="loc_heading" class="block text-xs font-medium text-gray-300">Kurs (0-359.99) <span class="text-red-500">*</span></label>
+                        <input type="number" step="0.01" min="0" max="359.99" id="loc_heading" name="heading" required
+                               class="mt-1 w-full p-1.5 rounded bg-gray-600 text-white border border-gray-500">
+                    </div>
+                    <div>
+                        <label for="loc_accuracy" class="block text-xs font-medium text-gray-300">Dokładność (metry)</label>
+                        <input type="number" step="any" min="0" max="99999.99" id="loc_accuracy" name="accuracy_meters"
+                               class="mt-1 w-full p-1.5 rounded bg-gray-600 text-white border border-gray-500">
+                    </div>
+                    <!-- Pole Source będzie ustawiane automatycznie na "manual" przez backend -->
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                        <button type="button" id="cancelLocationEntryFormBtn" class="text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded border border-gray-500 text-xs">Anuluj</button>
+                        <button type="submit" id="submitLocationEntryFormBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded text-xs">
+                            Dodaj Wpis
+                        </button>
+                    </div>
+                    <div id="location-entry-form-error" class="text-red-400 text-xs mt-1"></div>
+                </form>
+            </div>
+
+            <h2 class="text-lg font-semibold text-gray-200 mt-6 mb-3">Historia Wpisów</h2>
+            <div id="location-entries-list-container" class="max-h-80 overflow-y-auto">
+                <p class="text-gray-400 text-sm">Ładowanie historii lokalizacji...</p>
+                <!-- Wpisy lokalizacji będą tutaj renderowane przez JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-8">
+        <a href="{{ url_for('admin_serve_vessels_list') }}" class="text-blue-400 hover:text-blue-300">&laquo; Powrót do listy statków</a>
+    </div>
+</div>
+
+<!-- Ukryty szablon dla elementu listy wpisów lokalizacji -->
+<template id="location-entry-item-template">
+    <div class="location-entry-item bg-gray-700 p-2.5 mb-2 rounded shadow">
+        <p class="text-sm font-semibold text-gray-100">
+            <span class="timestamp-display"></span> (<span class="source-display text-yellow-400"></span>)
+        </p>
+        <p class="text-xs text-gray-300">
+            Poz: <span class="position-display"></span> | Kurs: <span class="heading-display"></span>°
+            <span class="accuracy-container" style="display: none;"> | Dokł: <span class="accuracy-display"></span>m</span>
+        </p>
+        <div class="mt-1.5 space-x-1">
+            <button type="button" class="edit-location-entry-btn text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-1.5 rounded">Edytuj</button>
+            <button type="button" class="delete-location-entry-btn text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-1.5 rounded">Usuń</button>
+        </div>
+    </div>
+</template>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script>
+    const CURRENT_VESSEL_ID_LOC = {{ vessel.id }}; // Inna nazwa dla pewności
+</script>
+<script src="{{ url_for('static', path='js/location_history_manager.js') }}"></script> {# Nowy plik JS #}
+{% endblock %}
+

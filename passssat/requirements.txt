@@ -1,0 +1,7 @@
+fastapi==0.111.0
+Jinja2==3.1.4
+uvicorn==0.29.0
+python-jose==3.4.0
+passlib==1.7.4
+pandas==2.2.3
+httpx==0.28.1

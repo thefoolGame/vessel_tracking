@@ -1,0 +1,47 @@
+<!-- partials/navbar.html -->
+<div class="container mx-auto px-4 mt-4">
+    <div class="flex border-b border-gray-700">
+        <a href="{{ url_for('map_page') }}"
+           class="tab-button px-6 py-3 -mb-px border-b-2 font-medium
+                  {% if request.url.path == url_for('map_page') %}
+                      border-indigo-500 text-indigo-300 bg-indigo-700
+                  {% else %}
+                      border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500
+                  {% endif %}
+                  focus:outline-none">
+            Map
+        </a>
+        <a href="{{ url_for('serve_sensors_overview_page') }}"
+           class="tab-button px-6 py-3 -mb-px border-b-2 font-medium
+                  {% if request.url.path == url_for('serve_sensors_overview_page') %} <!-- Sprawdzenie prefixu ścieżki -->
+                      border-indigo-500 text-indigo-300 bg-indigo-700
+                  {% else %}
+                      border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500
+                  {% endif %}
+                  focus:outline-none">
+            Sensors
+        </a>
+
+        <a href="{{ url_for('admin_serve_manufacturers_list') }}"
+           class="tab-button px-6 py-3 -mb-px border-b-2 font-medium
+                  {% if 'admin' in request.url.path %} <!-- Prostsze sprawdzenie -->
+                      border-red-500 text-red-300 bg-red-700
+                  {% else %}
+                      border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500
+                  {% endif %}
+                  focus:outline-none">
+            Admin Panel
+        </a>
+
+        <a href="{{ url_for('login_page') }}"
+           class="tab-button px-6 py-3 -mb-px border-b-2 font-medium ml-auto <!-- ml-auto przesuwa Login i Protected na prawo -->
+                  {% if request.url.path == url_for('login_page') %}
+                      border-indigo-500 text-indigo-300 bg-indigo-700
+                  {% else %}
+                      border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500
+                  {% endif %}
+                  focus:outline-none">
+            Login
+        </a>
+    </div>
+</div>

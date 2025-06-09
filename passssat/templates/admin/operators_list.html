@@ -1,0 +1,73 @@
+<!-- templates/admin/operators_list.html -->
+{% extends "admin/admin_base.html" %}
+
+{% block admin_title %}Zarządzanie Operatorami{% endblock %}
+
+{% block admin_content %}
+<div class="bg-gray-800 p-6 rounded-lg shadow-md">
+    {% if success_message %}
+        <div class="bg-green-600 text-white p-3 rounded mb-4" role="alert">
+            {{ success_message }}
+        </div>
+    {% endif %}
+    {% if error_message %}
+        <div class="bg-red-700 text-white p-3 rounded mb-4" role="alert">
+            {{ error_message }}
+        </div>
+    {% endif %}
+    {% if api_error_load %}
+         <div class="bg-yellow-700 text-white p-3 rounded mb-4" role="alert">
+            Błąd ładowania listy operatorów: {{ api_error_load }}
+        </div>
+    {% endif %}
+
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-100">Lista Operatorów</h1>
+        <a href="{{ url_for('admin_serve_create_operator_form') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Dodaj Nowego Operatora
+        </a>
+    </div>
+
+    {% if operators_list %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full table-auto">
+            <thead class="bg-gray-700 text-gray-300 uppercase text-xs leading-normal">
+                <tr>
+                    <th class="py-3 px-4 text-left">ID</th>
+                    <th class="py-3 px-4 text-left">Nazwa</th>
+                    <th class="py-3 px-4 text-left">Osoba Kontaktowa</th>
+                    <th class="py-3 px-4 text-left">Email</th>
+                    <th class="py-3 px-4 text-center">Floty</th>
+                    <th class="py-3 px-4 text-center">Statki</th>
+                    <th class="py-3 px-4 text-center">Akcje</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-200 text-sm">
+                {% for operator in operators_list %}
+                <tr class="border-b border-gray-700 hover:bg-gray-750">
+                    <td class="py-3 px-4 text-left whitespace-nowrap">{{ operator.id }}</td>
+                    <td class="py-3 px-4 text-left">{{ operator.name }}</td>
+                    <td class="py-3 px-4 text-left">{{ operator.contact_person | default('Brak') }}</td>
+                    <td class="py-3 px-4 text-left">{{ operator.email | default('Brak') }}</td>
+                    <td class="py-3 px-4 text-center">{{ operator.fleets_count }}</td>
+                    <td class="py-3 px-4 text-center">{{ operator.vessels_count }}</td>
+                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                        <a href="{{ url_for('admin_serve_edit_operator_form', operator_id=operator.id) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs mr-1">Edytuj</a>
+                        <form action="{{ url_for('admin_handle_delete_operator_proxy', operator_id=operator.id) }}" method="POST" class="inline-block" onsubmit="return confirm('Czy na pewno chcesz usunąć tego operatora? Może to wpłynąć na powiązane floty i statki.');">
+                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-xs">Usuń</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% elif not api_error_load %}
+    <p class="text-gray-400 mt-4">Brak operatorów do wyświetlenia. Możesz dodać pierwszego.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

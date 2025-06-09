@@ -1,0 +1,8 @@
+{% for position in markers %}
+    <tr>
+        <td class="border">{{ position.id }}</td>
+        <td class="border">{{ position.lat }}</td>
+        <td class="border">{{ position.lon }}</td>
+        <td class="border">{{ position.time }}</td>
+    </tr>
+{% endfor %}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PassAt Application{% endblock %} - PassApp v0.4</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- HTMX (jeśli używasz globalnie, jeśli nie, można przenieść do konkretnych stron) -->
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script> <!-- HTMX JSON encoder -->
+
+    <!-- Leaflet CSS (jeśli większość stron z niego korzysta, w przeciwnym razie do head_extra) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    {% block head_extra %}{% endblock %} <!-- Blok na dodatkowe elementy w <head> specyficzne dla strony -->
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans flex flex-col min-h-screen">
+
+    <header class="p-6 bg-blue-700 text-white text-center text-2xl font-semibold border-b border-blue-600">
+        PassAt Application - PassApp v0.4
+    </header>
+
+    {% include 'partials/navbar.html' %} <!-- Wspólny navbar -->
+
+    <main class="container mx-auto px-2 md:px-4 mt-4 flex-grow">
+        {% block content %}
+            <!-- Domyślna zawartość, jeśli strona dziedzicząca nie zdefiniuje bloku content -->
+            <p>Witaj w aplikacji PassAt!</p>
+        {% endblock %}
+    </main>
+
+    <footer class="text-center text-sm text-gray-500 py-6 md:py-8 mt-8 border-t border-gray-700">
+        PassAt Application &copy; 2025
+    </footer>
+
+    <!-- Leaflet JS (jeśli większość stron z niego korzysta) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+            
+    <!-- Globalne skrypty JS (jeśli masz) -->
+
+    {% block scripts_extra %}{% endblock %} <!-- Blok na dodatkowe skrypty JS specyficzne dla strony -->
+
+</body>
+</html>
